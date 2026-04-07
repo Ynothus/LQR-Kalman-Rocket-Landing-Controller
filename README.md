@@ -1,70 +1,95 @@
-# LQR-Controlled 1D Rocket Landing Simulation
+# LQR-Kalman 1D Vertical Landing Simulation
 
-**High-Powered L1 Rocket | Powered Descent & Soft Landing**
+A MATLAB simulation of a rocket performing a controlled vertical landing
+using an LQR controller and Kalman filter for state estimation.
 
-This simulation implements a **Linear Quadratic Regulator (LQR)** for the 1D vertical landing of a high-powered L1-class rocket. The model includes atmospheric drag, propellant mass flow, gravity feedforward, and actuator saturation.
 
-## Key Features
+## How It Works
 
-- Quadratic drag: `0.5·ρ·Cd·A·v²`
-- Fuel mass depletion based on throttle
-- Gravity feedforward to cancel dominant disturbance
-- Thrust saturation [0, maxthrust]
-- Simulation stops at landing (altitude ≤ 0.5 m)
-- Time-varying LQR (A and B updated each timestep)
-## Simulation Parameters
+True Physics → Noisy Sensors → Kalman Filter → LQR Controller → Thrust Command
+                                    ↑                                  |
+                                    └──────────────────────────────────┘
 
-| Parameter | Value | Description |
-|-----------|-------|-------------|
-| Dry mass | 0.156 kg | Structure + avionics |
-| Initial fuel | 0.1 kg | Propellant mass |
-| Gravity | 9.81 m/s² | g |
-| Initial altitude | 500 m | Starting height |
-| Initial velocity | 0 m/s | Dropped from rest |
-| Max time | 30 s | Simulation limit |
-| Max thrust | 100 N | Engine limit |
-| Altitude error scaling | 40 m | Q(1,1) weighting |
-| Velocity error scaling | 30 m/s | Q(2,2) weighting |
-| Time step | 0.01 s | Simulation resolution |
+- **LQR Controller**: Computes thrust to bring altitude and velocity to zero
+- **Kalman Filter**: Estimates altitude and velocity from noisy altimeter
+  and accelerometer readings
+- **Physics Model**: Simulates gravity, drag, thrust, and fuel consumption
 
-### Rocket Physical Properties
 
-| Parameter | Value |
-|-----------|-------|
-| Diameter | 0.22 m |
-| Cross-sectional area | ~0.038 m² |
-| Drag coefficient (Cd) | 0.45 |
-| Max mass flow rate | 0.0625 kg/s |
+## Requirements
 
-## Controller Design
+- MATLAB R2018b or later
+- Control System Toolbox
 
-**State vector:** `x = [altitude_error; velocity_error]`
 
-**Q matrix:** `diag([1/40², 1/30²])` — normalizes errors
+## Getting Started
 
-**R scalar:** `1/100²` — normalizes control effort
+1. Place both files in the same directory
+2. Run in MATLAB:
+   RunSimulation
+3. A dialog box will appear with default values — adjust if needed and click OK
+4. Two figures will be generated
 
-**Control law:** `u = -K·x + m·g` (LQR feedback + gravity feedforward)
 
-The LQR gain `K` is recomputed at each time step because the system dynamics change with velocity (drag) and mass.
+## Files
 
-## How to Run
+| File | Description |
+|---|---|
+| RunSimulation.m | Launcher script (GUI, plotting) |
+| LQR_Kal_1D_Sim.m | Core simulation function |
 
-In MATLAB, run:
 
-```matlab
-[t, alt, velo, accel, thrust, mass, fmass] = LQR_1D_Sim(0.156, 0.1, 9.81, 500, 0, 30, 100, 40, 30, 0.01);
-```
+## Default Parameters
 
-### Plot Results
+| Parameter | Default | Unit |
+|---|---|---|
+| Dry Mass | 0.156 | kg |
+| Fuel Mass | 0.1 | kg |
+| Gravity | 9.81 | m/s² |
+| Initial Altitude | 500 | m |
+| Initial Velocity | 0 | m/s |
+| Max Time | 30 | s |
+| Max Thrust | 100 | N |
+| Max Altitude Error | 40 | m |
+| Max Velocity Error | 30 | m/s |
+| Time Step | 0.01 | s |
+| Drag Coefficient | 0.45 | - |
+| Air Density | 1.225 | kg/m³ |
+| Altimeter Noise (σ) | 0.4 | m |
+| Accelerometer Noise (σ) | 0.15 | m/s² |
+| Model Uncertainty | 2.0 | - |
 
-![Landing Simulation Plot](landing_simulation_plot.png)
 
-## Expected Output
+## Plots
 
-```
-Landed at t = 8.45 s | Final velocity = -0.23 m/s
-```
+### Figure 1: Simulation Results
+- Altitude (true vs measured vs estimated)
+- Velocity (true vs estimated)
+- Acceleration, Thrust, Mass, Fuel
+![Simulation Results](simulation_results.png)
 
-The rocket lands softly (velocity near zero) within ~8–10 seconds.
+### Figure 2: Kalman Filter Performance
+- Altitude and velocity estimation errors
+- Sensor error vs Kalman error comparison
+- Error distribution histogram
+![Simulation Results](error_plots.png)
 
+
+## Quick Tuning Guide
+
+| Goal | What to Change |
+|---|---|
+| Faster response | Decrease max_alt_error or max_velo_error |
+| Less aggressive thrust | Increase max_alt_error or max_velo_error |
+| Smoother estimates | Decrease model_uncertainty |
+| More responsive estimates | Increase model_uncertainty |
+| Simulate better sensors | Decrease sigma_alt and sigma_acc |
+| Simulate worse sensors | Increase sigma_alt and sigma_acc |
+
+
+## Limitations
+
+- 1D only (no lateral dynamics or attitude control)
+- Constant air density (no atmospheric variation with altitude)
+- Linear Kalman filter (drag is nonlinear)
+- No sensor delay or bias modeling
